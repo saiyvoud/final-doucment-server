@@ -30,6 +30,7 @@ export default class UserController {
                     return SendCreate(res, SMessage.Register);
                 })
         } catch (error) {
+            console.log(error);
             return SendError(res, 500, EMessage.ServerInternal, error);
         }
     }
