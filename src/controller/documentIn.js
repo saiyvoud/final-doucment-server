@@ -78,11 +78,10 @@ export default class DocumentInController {
                 return SendError(res, 400, EMessage.NotFound, "File");
             }
             const document_in_id = uuidv4();
-            const insert = `insert into document_in (document_in_id, title, numberID,contactName,contactNumber,date,
-                 faculty_id,document_type_id,description,files,status,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            const insert = `insert into document_in (document_in_id, title, numberID,contactName,contactNumber,date,faculty_id,document_type_id,description,files,status,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
             connected.query(insert, [document_in_id, title,
-                numberID, contactName, contactNumber, date, ,
+                numberID, contactName, contactNumber, date, 
                 faculty_id, document_type_id, description, files_url, StatusDocument.await, destinationName, destinationNumber, sendDoc], (err) => {
                     if (err) {
                         console.log(err);

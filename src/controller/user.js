@@ -10,7 +10,7 @@ export default class UserController {
             const { username, email, password, phoneNumber, faculty_id, office_id } = req.body;
             const validate = await ValidateData({
                 username, email, password,
-                phoneNumber, faculty_id, office_id
+                phoneNumber,
             });
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","));
