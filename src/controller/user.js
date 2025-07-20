@@ -92,11 +92,11 @@ export default class UserController {
                     "refreshTokenExpireAt": token?.refreshTokenExpireAt,
                     "tokenExpireAt": token?.tokenExpireAt
                 }
-                return SendSuccess(res, SMessage.Login, data)
+                 return SendSuccess(res, SMessage.Login, data)
             })
 
         } catch (error) {
-            // console.log(error)
+            console.log(error)
             return SendError(res, 500, EMessage.ServerInternal, error);
         }
     }

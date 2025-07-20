@@ -83,6 +83,7 @@ router.get("/document_out/search", DocumentOutController.Search);
 router.get("/document_out/selAll", DocumentOutController.SelectAll);
 router.get("/document_out/selOne/:document_out_id", auth, checkPermission, DocumentOutController.SelectOne);
 router.post("/document_out/insert", auth, checkPermission, DocumentOutController.Insert);
+router.put("/document_out/update/:document_out_id", auth, checkPermission, DocumentOutController.UpdateDocumentOut);
 router.put("/document_out/updateStatus/:document_out_id", auth, checkPermission, DocumentOutController.UpdateStatus);
 router.delete("/document_out/delete/:document_out_id", auth, checkPermission, DocumentOutController.DeleteDocumentOut);
 //------ Document Type ------

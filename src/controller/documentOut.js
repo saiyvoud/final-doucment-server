@@ -59,50 +59,73 @@ export default class DocumentOutController {
     }
     static async Insert(req, res) {
         try {
-            const { title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id } = req.body;
-            const validate = await ValidateData({
-                title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id
-            });
+            const { title, destinationName, destinationNumber, faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc } = req.body;
+            const validate = await ValidateData({ title, faculty_id, destinationName, destinationNumber, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc });
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
             }
+            const fileData = req.files;
+            if (!fileData || !fileData.files) {
+                return SendError(res, 400, EMessage.BadRequest, "files")
+            }
+            // await FindOnePartDemand();
+            const files_url = await UploadImageToCloud(fileData.files.data, fileData.files.mimetype);
+            if (!files_url) {
+                return SendError(res, 400, EMessage.NotFound, "File");
+            }
             const document_out_id = uuidv4();
-            const insert = `insert into document_out (document_out_id,title, destinationName, destinationNumber,faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id, statusOut) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-            connected.query(insert, [document_out_id, title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id, StatusDocument.padding], (err) => {
-                    if (err) return SendError(res, 404, EMessage.EInsert, err);
-                    return SendCreate(res, SMessage.Insert);
+            const insert = `insert into document_out (document_out_id, title, numberID,contactName,contactNumber,date,faculty_id,document_type_id,description,files,status,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+            connected.query(insert, [document_out_id, title,
+                numberID, contactName, contactNumber, date,
+                faculty_id, document_type_id, description, files_url, FollowDocument.await, destinationName, destinationNumber, sendDoc], (err) => {
+                    if (err) {
+                        console.log(err);
+                        return SendError(res, 404, EMessage.EInsert, err);
+                    }
+                    const follow_document_out_id = uuidv4();
+                    const datetime = new Date()
+                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,statusOut,time) values (?,?,?,?)";
+                    connected.query(insert2, [follow_document_out_id, document_out_id, FollowDocument.await, datetime], (err) => {
+                        if (err) return SendError(res, 404, EMessage.EInsert, err);
+                        return SendCreate(res, SMessage.Insert);
+                    })
+                    //return SendCreate(res, SMessage.Insert);
                 })
         } catch (error) {
+            console.log(error);
             return SendError(res, 500, EMessage.ServerInternal, error)
         }
     }
     static async UpdateDocumentOut(req, res) {
         try {
-
             const document_out_id = req.params.document_out_id;
-
             if (!document_out_id) return SendError(res, 400, EMessage.BadRequest, "document_out_id");
-
-            const { title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id } = req.body;
-            const validate = await ValidateData({
-                title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id
-            });
+            const document = await FindOneDocumentOut(document_out_id);
+            const { title, numberID, destinationName, destinationNumber, faculty_id, contactName, contactNumber, document_type_id, date, description, sendDoc, statusOut } = req.body;
+            const validate = await ValidateData({ title, numberID, faculty_id, contactName, contactNumber, document_type_id, date, destinationName, destinationNumber, sendDoc, statusOut });
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
             }
-            const update = `update document_out set title=?, destinationName=?, destinationNumber=?,faculty_id=?, numberID=?, contactName=?, contactNumber=?, document_type_id=?, date=?, description=?, sendDoc=?, part_suppile_id=?,statusOut=? where document_out_id=?`;
-            connected.query(update, [title, destinationName, destinationNumber,
-                faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc, part_suppile_id, FollowDocument.padding, document_out_id], (err) => {
-                    if (err) return SendError(res, 404, EMessage.EUpdate, err);
+            const update = `Update document_out set title=?, numberID=?,contactName=?,contactNumber=?, date=?, faculty_id=?,document_type_id=?,description=? ,destinationName=?,destinationNumber=?,sendDoc=?,statusOut=? where document_out_id=?`
+            connected.query(update, [title, numberID, contactName, contactNumber, date, faculty_id, document_type_id, description, destinationName, destinationNumber, sendDoc, statusOut, document_out_id], (err) => {
+                if (err) return SendError(res, 404, EMessage.EUpdate, err);
+                const follow_document_out_id = uuidv4();
+                const datetime = new Date()
+                if (document.statusOut !== statusOut) {
+                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,status,time) values (?,?,?,?)";
+                    connected.query(insert2, [follow_document_out_id, document_out_id, statusOut, datetime], (err) => {
+                        if (err) return SendError(res, 404, EMessage.EInsert, err);
+                        return SendSuccess(res, SMessage.Update);
+                    })
+                }else{
                     return SendSuccess(res, SMessage.Update);
-                })
+                }
+              
+               // return SendSuccess(res, SMessage.Update);
+            })
         } catch (error) {
-            console.log(error)
+            console.log(error);
             return SendError(res, 500, EMessage.ServerInternal, error)
         }
     }

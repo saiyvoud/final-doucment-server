@@ -81,8 +81,8 @@ export default class DocumentInController {
             const insert = `insert into document_in (document_in_id, title, numberID,contactName,contactNumber,date,faculty_id,document_type_id,description,files,status,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
             connected.query(insert, [document_in_id, title,
-                numberID, contactName, contactNumber, date, 
-                faculty_id, document_type_id, description, files_url, StatusDocument.await, destinationName, destinationNumber, sendDoc], (err) => {
+                numberID, contactName, contactNumber, date,
+                faculty_id, document_type_id, description, files_url, FollowDocument.await, destinationName, destinationNumber, sendDoc], (err) => {
                     if (err) {
                         console.log(err);
                         return SendError(res, 404, EMessage.EInsert, err);
@@ -90,7 +90,7 @@ export default class DocumentInController {
                     const follow_document_in_id = uuidv4();
                     const datetime = new Date()
                     const insert2 = "insert into follow_document_in (follow_document_in_id,document_in_id,statusName,time) values (?,?,?,?)";
-                    connected.query(insert2, [follow_document_in_id, document_in_id, FollowDocument.progress, datetime], (err) => {
+                    connected.query(insert2, [follow_document_in_id, document_in_id, FollowDocument.await, datetime], (err) => {
                         if (err) return SendError(res, 404, EMessage.EInsert, err);
                         return SendCreate(res, SMessage.Insert);
                     })
@@ -105,16 +105,28 @@ export default class DocumentInController {
         try {
             const document_in_id = req.params.document_in_id;
             if (!document_in_id) return SendError(res, 400, EMessage.BadRequest, "document_in_id");
-            await FindOneDocumentIn(document_in_id);
-            const { title, numberID, destinationName, destinationNumber, faculty_id, contactName, contactNumber, document_type_id, date, description, sendDoc } = req.body;
-            const validate = await ValidateData({ title, numberID, faculty_id, contactName, contactNumber, document_type_id, date, destinationName, destinationNumber, sendDoc });
+            const document = await FindOneDocumentIn(document_in_id);
+            const { title, numberID, destinationName, destinationNumber, faculty_id, contactName, contactNumber, document_type_id, date, description, sendDoc, status } = req.body;
+            const validate = await ValidateData({ title, numberID, faculty_id, contactName, contactNumber, document_type_id, date, destinationName, destinationNumber, sendDoc, status });
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
             }
-            const update = `Update document_in set title=?, numberID=?,contactName=?,contactNumber=?, date=?, faculty_id=?,document_type_id=?,description=? ,destinationName=?,destinationNumber=?,sendDoc=? where document_in_id=?`
-            connected.query(update, [title, numberID, contactName, contactNumber, date,  faculty_id, document_type_id, description, destinationName, destinationNumber, sendDoc, document_in_id], (err) => {
+            const update = `Update document_in set title=?, numberID=?,contactName=?,contactNumber=?, date=?, faculty_id=?,document_type_id=?,description=? ,destinationName=?,destinationNumber=?,sendDoc=?,status=? where document_in_id=?`
+            connected.query(update, [title, numberID, contactName, contactNumber, date, faculty_id, document_type_id, description, destinationName, destinationNumber, sendDoc, status, document_in_id], (err) => {
                 if (err) return SendError(res, 404, EMessage.EUpdate, err);
-                return SendSuccess(res, SMessage.Update);
+                const follow_document_in_id = uuidv4();
+                const datetime = new Date()
+                if (document.status !== status) {
+                    const insert2 = "insert into follow_document_in (follow_document_in_id,document_in_id,statusName,time) values (?,?,?,?)";
+                    connected.query(insert2, [follow_document_in_id, document_in_id, status, datetime], (err) => {
+                        if (err) return SendError(res, 404, EMessage.EInsert, err);
+                        return SendSuccess(res, SMessage.Update);
+                    })
+                }else{
+                    return SendSuccess(res, SMessage.Update);
+                }
+              
+               // return SendSuccess(res, SMessage.Update);
             })
         } catch (error) {
             console.log(error);
