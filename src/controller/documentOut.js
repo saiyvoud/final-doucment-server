@@ -3,13 +3,13 @@ import { EMessage, FollowDocument, SMessage, StatusDocument } from "../service/m
 import { SendCreate, SendError, SendSuccess } from "../service/response.js";
 import { ValidateData } from "../service/validate.js";
 import { v4 as uuidv4 } from "uuid"
+import { UploadImageToCloud } from "../config/cloudinary.js"
 import { FindOneDocumentIn, FindOneDocumentOut, FindOnePartSuppile } from "../service/service.js";
 export default class DocumentOutController {
     static async Search(req, res) {
         try {
             const search = req.query.search;
             const query = `SELECT * FROM document_out 
-            INNER JOIN part_suppile on document_out.part_suppile_id COLLATE utf8mb4_general_ci = part_suppile.part_suppile_id
             INNER JOIN document_type on document_out.document_type_id COLLATE utf8mb4_general_ci = document_type.document_type_id
             INNER JOIN faculty on document_out.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
             WHERE document_out.numberID = ?`;
@@ -26,7 +26,6 @@ export default class DocumentOutController {
     static async SelectAll(req, res) {
         try {
             const select = `select * from document_out 
-            INNER JOIN part_suppile on document_out.part_suppile_id COLLATE utf8mb4_general_ci = part_suppile.part_suppile_id
             INNER JOIN document_type on document_out.document_type_id COLLATE utf8mb4_general_ci = document_type.document_type_id
             INNER JOIN faculty on document_out.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
             ORDER BY document_out.updatedAt DESC
@@ -59,6 +58,7 @@ export default class DocumentOutController {
     }
     static async Insert(req, res) {
         try {
+            console.log(req.body);
             const { title, destinationName, destinationNumber, faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc } = req.body;
             const validate = await ValidateData({ title, faculty_id, destinationName, destinationNumber, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc });
             if (validate.length > 0) {
@@ -74,20 +74,23 @@ export default class DocumentOutController {
                 return SendError(res, 400, EMessage.NotFound, "File");
             }
             const document_out_id = uuidv4();
-            const insert = `insert into document_out (document_out_id, title, numberID,contactName,contactNumber,date,faculty_id,document_type_id,description,files,status,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            const insert = `insert into document_out (document_out_id, title, numberID,contactName,contactNumber,date,faculty_id,document_type_id,description,files,statusOut,destinationName,destinationNumber,sendDoc) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
             connected.query(insert, [document_out_id, title,
                 numberID, contactName, contactNumber, date,
                 faculty_id, document_type_id, description, files_url, FollowDocument.await, destinationName, destinationNumber, sendDoc], (err) => {
                     if (err) {
-                        console.log(err);
+                        console.log("err1", err);
                         return SendError(res, 404, EMessage.EInsert, err);
                     }
                     const follow_document_out_id = uuidv4();
                     const datetime = new Date()
-                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,statusOut,time) values (?,?,?,?)";
+                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,statusName,time) values (?,?,?,?)";
                     connected.query(insert2, [follow_document_out_id, document_out_id, FollowDocument.await, datetime], (err) => {
-                        if (err) return SendError(res, 404, EMessage.EInsert, err);
+                        if (err) {
+                            console.log("err2", err);
+                            return SendError(res, 404, EMessage.EInsert, err)
+                        };
                         return SendCreate(res, SMessage.Insert);
                     })
                     //return SendCreate(res, SMessage.Insert);
@@ -116,16 +119,16 @@ export default class DocumentOutController {
             }
             const update = `Update document_out set title=?, numberID=?,contactName=?,contactNumber=?, date=?, faculty_id=?,document_type_id=?,description=? ,destinationName=?,destinationNumber=?,sendDoc=?,statusOut=? where document_out_id=?`
             connected.query(update, [title, numberID, contactName, contactNumber, date, faculty_id, document_type_id, description, destinationName, destinationNumber, sendDoc, statusOut, document_out_id], (err) => {
-                if (err){
-                console.log("c");
-                console.log(err);
+                if (err) {
+                    console.log("c");
+                    console.log(err);
 
                     return SendError(res, 404, EMessage.EUpdate, err);
                 }
                 const follow_document_out_id = uuidv4();
                 const datetime = new Date()
                 if (document.statusOut !== statusOut) {
-                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,status,time) values (?,?,?,?)";
+                    const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,statusName,time) values (?,?,?,?)";
                     connected.query(insert2, [follow_document_out_id, document_out_id, statusOut, datetime], (err) => {
                         console.log(err);
                         if (err) return SendError(res, 404, EMessage.EInsert, err);
