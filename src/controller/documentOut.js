@@ -99,30 +99,43 @@ export default class DocumentOutController {
     }
     static async UpdateDocumentOut(req, res) {
         try {
+            console.log(req.body);
             const document_out_id = req.params.document_out_id;
-            if (!document_out_id) return SendError(res, 400, EMessage.BadRequest, "document_out_id");
+            console.log(document_out_id)
+            if (!document_out_id) {
+                console.log("A");
+                return SendError(res, 400, EMessage.BadRequest, "document_out_id")
+            };
             const document = await FindOneDocumentOut(document_out_id);
             const { title, numberID, destinationName, destinationNumber, faculty_id, contactName, contactNumber, document_type_id, date, description, sendDoc, statusOut } = req.body;
             const validate = await ValidateData({ title, numberID, faculty_id, contactName, contactNumber, document_type_id, date, destinationName, destinationNumber, sendDoc, statusOut });
             if (validate.length > 0) {
+                console.log(validate)
+                console.log("B");
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
             }
             const update = `Update document_out set title=?, numberID=?,contactName=?,contactNumber=?, date=?, faculty_id=?,document_type_id=?,description=? ,destinationName=?,destinationNumber=?,sendDoc=?,statusOut=? where document_out_id=?`
             connected.query(update, [title, numberID, contactName, contactNumber, date, faculty_id, document_type_id, description, destinationName, destinationNumber, sendDoc, statusOut, document_out_id], (err) => {
-                if (err) return SendError(res, 404, EMessage.EUpdate, err);
+                if (err){
+                console.log("c");
+                console.log(err);
+
+                    return SendError(res, 404, EMessage.EUpdate, err);
+                }
                 const follow_document_out_id = uuidv4();
                 const datetime = new Date()
                 if (document.statusOut !== statusOut) {
                     const insert2 = "insert into follow_document_out (follow_document_out_id,document_out_id,status,time) values (?,?,?,?)";
                     connected.query(insert2, [follow_document_out_id, document_out_id, statusOut, datetime], (err) => {
+                        console.log(err);
                         if (err) return SendError(res, 404, EMessage.EInsert, err);
                         return SendSuccess(res, SMessage.Update);
                     })
-                }else{
+                } else {
                     return SendSuccess(res, SMessage.Update);
                 }
-              
-               // return SendSuccess(res, SMessage.Update);
+
+                // return SendSuccess(res, SMessage.Update);
             })
         } catch (error) {
             console.log(error);
