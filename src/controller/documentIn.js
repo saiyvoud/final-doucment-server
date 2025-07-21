@@ -15,8 +15,8 @@ export default class DocumentInController {
             INNER JOIN faculty on document_in.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
             WHERE numberID =?
             `;
-            const values = [`%${search}%`];
-           // const values = [search];
+            //const values = [`%${search}%`];
+            const values = [search];
             connected.query(query, values, (err, result) => {
                 if (err) return SendError(res, 404, EMessage.NotFound, err);
                 if (!result[0]) return SendError(res, 404, EMessage.NotFound);

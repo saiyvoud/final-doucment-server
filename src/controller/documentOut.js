@@ -13,8 +13,8 @@ export default class DocumentOutController {
             INNER JOIN document_type on document_out.document_type_id COLLATE utf8mb4_general_ci = document_type.document_type_id
             INNER JOIN faculty on document_out.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
             WHERE document_out.numberID = ?`;
-             const values = [`%${search}%`];
-            connected.query(query, [values], (err, result) => {
+            // const values = [`%${search}%`];
+            connected.query(query, [search], (err, result) => {
                 if (err) return SendError(res, 404, EMessage.NotFound, err);
                 if (!result[0]) return SendError(res, 404, EMessage.NotFound);
                 return SendSuccess(res, SMessage.Search, result);
