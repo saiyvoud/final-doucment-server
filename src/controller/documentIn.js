@@ -26,6 +26,7 @@ export default class DocumentInController {
             return SendError(res, 500, EMessage.Eserver, error);
         }
     }
+    
     static async SelectAll(req, res) {
         try {
             const select = `select * from document_in 
