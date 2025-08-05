@@ -4,7 +4,7 @@ import { SendCreate, SendError, SendSuccess } from "../service/response.js";
 import { ValidateData } from "../service/validate.js";
 import { v4 as uuidv4 } from "uuid"
 import { UploadImageToCloud } from "../config/cloudinary.js"
-import { FindOneDocumentIn, FindOneDocumentOut, FindOnePartSuppile } from "../service/service.js";
+import { FindOneDocument, FindOneDocumentIn, FindOneDocumentOut, FindOnePartSuppile } from "../service/service.js";
 export default class DocumentOutController {
     static async Search(req, res) {
         try {
@@ -12,9 +12,9 @@ export default class DocumentOutController {
             const query = `SELECT * FROM document_out 
             INNER JOIN document_type on document_out.document_type_id COLLATE utf8mb4_general_ci = document_type.document_type_id
             INNER JOIN faculty on document_out.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
-            WHERE document_out.numberID = ?`;
-            // const values = [`%${search}%`];
-            connected.query(query, [search], (err, result) => {
+            WHERE document_out.numberID LIKE ?`;
+             const values = [`%${search}%`];
+            connected.query(query, values, (err, result) => {
                 if (err) return SendError(res, 404, EMessage.NotFound, err);
                 if (!result[0]) return SendError(res, 404, EMessage.NotFound);
                 return SendSuccess(res, SMessage.Search, result);
@@ -58,11 +58,15 @@ export default class DocumentOutController {
     }
     static async Insert(req, res) {
         try {
-            console.log(req.body);
+
             const { title, destinationName, destinationNumber, faculty_id, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc } = req.body;
             const validate = await ValidateData({ title, faculty_id, destinationName, destinationNumber, numberID, contactName, contactNumber, document_type_id, date, description, sendDoc });
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
+            }
+            const check = await FindOneDocument(numberID);
+            if (!check) { 
+                return SendError(res, 400,EMessage.NotFound) 
             }
             const fileData = req.files;
             if (!fileData || !fileData.files) {

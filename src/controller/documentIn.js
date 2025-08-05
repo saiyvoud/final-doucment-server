@@ -3,7 +3,7 @@ import { EMessage, FollowDocument, SMessage, StatusDocument, } from "../service/
 import { SendCreate, SendError, SendSuccess } from "../service/response.js";
 import { ValidateData } from "../service/validate.js";
 import { v4 as uuidv4 } from "uuid"
-import { FindOneDocumentIn, FindOnePartDemand } from "../service/service.js";
+import { CheckDocumentIn, FindOneDocumentIn, FindOnePartDemand } from "../service/service.js";
 import { UploadImageToCloud } from "../config/cloudinary.js";
 export default class DocumentInController {
     static async Search(req, res) {
@@ -13,10 +13,10 @@ export default class DocumentInController {
             SELECT * FROM document_in 
             INNER JOIN document_type on document_in.document_type_id COLLATE utf8mb4_general_ci = document_type.document_type_id
             INNER JOIN faculty on document_in.faculty_id COLLATE utf8mb4_general_ci = faculty.faculty_id
-            WHERE numberID =?
+            WHERE numberID LIKE ?
             `;
-            //const values = [`%${search}%`];
-            const values = [search];
+            const values = [`%${search}%`];
+            //const values = [search];
             connected.query(query, values, (err, result) => {
                 if (err) return SendError(res, 404, EMessage.NotFound, err);
                 if (!result[0]) return SendError(res, 404, EMessage.NotFound);
@@ -69,6 +69,10 @@ export default class DocumentInController {
             if (validate.length > 0) {
                 return SendError(res, 400, EMessage.BadRequest, validate.join(","))
             }
+          const check =   await CheckDocumentIn(numberID);
+          if (!check) { 
+            return SendError(res, 400,EMessage.NotFound) 
+        }
             const fileData = req.files;
             if (!fileData || !fileData.files) {
                 return SendError(res, 400, EMessage.BadRequest, "files")

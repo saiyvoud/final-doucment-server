@@ -33,6 +33,34 @@ export const DecryptData = async (data) => {
     const decrypt = CryptoJS.AES.decrypt(data, SECRET_KEY.toString()).toString(CryptoJS.enc.Utf8);
     return decrypt;
 }
+export const FindOneDocument = async (numberID) => {
+    return new Promise(async (resovle, reject) => {
+        try {
+            const checkEmail = "Select * from document_out where numberID=?";
+            connected.query(checkEmail, numberID, (err, result) => {
+                if (err) return reject(EMessage.NotFound + err)
+                if (!result[0]) return resovle(true);
+                return false;
+            })
+        } catch (error) {
+            return reject(error);
+        }
+    })
+}
+export const CheckDocumentIn = async (numberID) => {
+    return new Promise(async (resovle, reject) => {
+        try {
+            const checkEmail = "Select * from document_in where numberID=?";
+            connected.query(checkEmail, numberID, (err, result) => {
+                if (err) return reject(EMessage.NotFound + err)
+                if (!result[0]) return resovle(true);
+                return false;
+            })
+        } catch (error) {
+            return reject(error);
+        }
+    })
+}
 export const FindOneEmail = async (email) => {
     return new Promise(async (resovle, reject) => {
         try {
